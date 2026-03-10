@@ -965,8 +965,20 @@ const POLY_BASE = 'https://api.polygon.io';
 
 // helper مع Authorization header يحل CORS
 async function pFetch(url) {
-  const r = await fetch(url, {headers:{'Authorization':'Bearer '+POLY_KEY}});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  // أضف apiKey في الـ URL كـ fallback
+  const sep = url.includes('?') ? '&' : '?';
+  const fullUrl = url + sep + 'apiKey=' + POLY_KEY;
+  const r = await fetch(fullUrl, {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + POLY_KEY,
+    },
+    mode: 'cors'
+  });
+  if(!r.ok) {
+    const txt = await r.text().catch(()=>'');
+    throw new Error('HTTP ' + r.status + ' ' + txt.slice(0,100));
+  }
   return r.json();
 }
 
