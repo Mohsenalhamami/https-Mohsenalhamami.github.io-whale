@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WHALE TRACKER</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020408;--surface:#080f18;--panel:#0a1520;--border:#0d2035;--accent:#00d4ff;--green:#00ff88;--red:#ff3355;--gold:#ffd700;--purple:#9d4edd;--text:#c8dff0;--dim:#4a6a80}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;padding-bottom:80px}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:36px 36px;pointer-events:none;z-index:0}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:200;background:rgba(2,4,8,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:10px 14px}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;border:1.5px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 12px rgba(0,212,255,.25)}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--accent);line-height:1}
+.logo-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:2px}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);padding:5px 12px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#00ff88}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#00ff88}
+.hdr-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.hs{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center}
+.hs-v{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.hs-l{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* TABS */
+.tabs{display:flex;background:rgba(2,4,8,.9);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:102px;z-index:190}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:70px;padding:10px 6px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-family:'Tajawal',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;text-align:center;transition:color .2s,border-color .2s}
+.tab.active{color:#00d4ff;border-bottom-color:#00d4ff}
+.ti{font-size:16px;display:block;margin-bottom:1px}
+
+/* VIEWS */
+.view{display:none;padding:12px 12px 0;position:relative;z-index:1}
+.view.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.ch{padding:11px 14px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:13px;font-weight:900;color:#fff;display:flex;align-items:center;gap:6px}
+
+/* METRICS */
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+.mc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.mc.b::after{background:linear-gradient(90deg,#00d4ff,transparent)}
+.mc.g::after{background:linear-gradient(90deg,#00ff88,transparent)}
+.mc.o::after{background:linear-gradient(90deg,#ffd700,transparent)}
+.mc.p::after{background:linear-gradient(90deg,#9d4edd,transparent)}
+.ml{font-size:10px;color:var(--dim);margin-bottom:4px}
+.mv{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1}
+.ms{font-size:10px;color:var(--dim);margin-top:3px}
+
+/* WHALE SCROLL */
+.wsc{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;margin-bottom:12px}
+.wsc::-webkit-scrollbar{display:none}
+.wb{flex-shrink:0;cursor:pointer;border-radius:10px;padding:10px 14px;text-align:center;min-width:78px;transition:all .2s;border:1px solid var(--border);background:var(--surface)}
+.wb.active{background:var(--panel)}
+.we{font-size:24px}
+.wn{font-size:10px;font-weight:900;color:#fff;margin-top:4px}
+.wr2{font-size:10px;font-family:'IBM Plex Mono',monospace;color:#00ff88}
+
+/* TABLE */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th{padding:8px 11px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 11px;border-bottom:1px solid rgba(13,32,53,.4);font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.tk{font-family:'Bebas Neue',sans-serif;font-size:17px;color:#fff;letter-spacing:2px}
+.ob{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600}
+.oc{background:rgba(0,255,136,.12);color:#00ff88;border:1px solid rgba(0,255,136,.25)}
+.op{background:rgba(255,51,85,.12);color:#ff3355;border:1px solid rgba(255,51,85,.25)}
+.sk{font-family:'IBM Plex Mono',monospace;color:#00d4ff;font-weight:600;font-size:12px}
+.ex{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);white-space:nowrap}
+.pp{color:#00ff88;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.pn{color:#ff3355;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.fb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(0,255,136,.1);color:#00ff88}
+.fn{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(255,51,85,.1);color:#ff3355}
+.cpb{background:transparent;border:1px solid var(--border);color:var(--dim);padding:5px 9px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;cursor:pointer;white-space:nowrap}
+.cpb:active{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.08)}
+.cab{background:rgba(0,212,255,.1);border:1px solid #00d4ff;color:#00d4ff;padding:7px 12px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;cursor:pointer;letter-spacing:1px}
+
+/* SIGNALS */
+.sl{max-height:250px;overflow-y:auto}
+.sl::-webkit-scrollbar{width:3px}
+.sl::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.si{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(13,32,53,.4)}
+.si:last-child{border-bottom:none}
+.st{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);min-width:40px}
+.sd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sx{flex:1;font-size:12px;line-height:1.4}
+.sx strong{color:#fff}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;white-space:nowrap}
+
+/* WHALE DETAIL */
+.wd{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.wdt{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.wdr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
+.wds{background:var(--panel);border-radius:8px;padding:9px;text-align:center}
+.wdv{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.wdl{font-size:9px;color:var(--dim);margin-top:2px}
+.pm{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--panel);border-radius:6px;margin-bottom:5px}
+.bva{width:100%;margin-top:8px;background:rgba(0,212,255,.08);border:1px solid #00d4ff;color:#00d4ff;padding:10px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px}
+
+/* COPY */
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.cct{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ba{width:100%;margin-top:10px;background:rgba(0,255,136,.1);border:1px solid #00ff88;color:#00ff88;padding:11px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px}
+
+/* MODAL */
+.mb{position:fixed;inset:0;z-index:500;background:rgba(2,4,8,.92);backdrop-filter:blur(12px);display:none;align-items:flex-end;justify-content:center}
+.mb.show{display:flex}
+.md{background:var(--panel);border:1px solid #00d4ff;border-radius:16px 16px 0 0;padding:22px;width:100%;max-width:500px;box-shadow:0 -8px 40px rgba(0,212,255,.15)}
+.mh{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.mt{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#00d4ff;margin-bottom:14px}
+.dr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.dr:last-of-type{border-bottom:none}
+.dl{font-size:12px;color:var(--dim)}
+.dv{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px}
+.rb{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.2);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,215,0,.85);margin:12px 0;line-height:1.5}
+.mbs{display:flex;gap:8px;margin-top:4px}
+.bcon{flex:1;background:rgba(0,255,136,.12);border:1px solid #00ff88;color:#00ff88;padding:12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:1px}
+.bcan{flex:1;background:transparent;border:1px solid var(--border);color:var(--dim);padding:12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:#00ff88;color:#000;padding:10px 20px;border-radius:30px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;opacity:0;transition:all .3s;z-index:600;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* TAGS */
+.tag{padding:2px 8px;border-radius:4px;font-size:9px;font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.tc{background:rgba(0,255,136,.1);color:#00ff88;border:1px solid rgba(0,255,136,.2)}
+.tp{background:rgba(255,51,85,.1);color:#ff3355;border:1px solid rgba(255,51,85,.2)}
+.ts{background:rgba(157,78,221,.1);color:#9d4edd;border:1px solid rgba(157,78,221,.2)}
+.ta{background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.2)}
+.tg{background:rgba(255,215,0,.1);color:#ffd700;border:1px solid rgba(255,215,0,.2)}
+
+.sl2{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;padding:4px 0 10px}
+
+/* GREEKS TAB */
+.gf-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--dim);font-family:'Tajawal',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s}
+.gf-btn.active{background:rgba(0,212,255,.1);border-color:#00d4ff;color:#00d4ff}
+.greek-info{background:var(--panel);border-radius:8px;padding:10px}
+.gi-sym{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;margin-bottom:4px}
+.gi-txt{font-size:10px;color:var(--dim);line-height:1.5}
+
+/* Liquidity bar */
+.liq-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(13,32,53,.4)}
+.liq-row:last-child{border-bottom:none}
+.liq-tk{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;letter-spacing:2px;min-width:55px}
+.liq-info{flex:1}
+.liq-bar-wrap{height:6px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden}
+.liq-bar{height:100%;border-radius:3px;transition:width .6s ease}
+.liq-oi{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;min-width:60px;text-align:left}
+.liq-vol{font-size:10px;color:var(--dim)}
+
+/* IV gauge */
+.iv-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(13,32,53,.4)}
+.iv-row:last-child{border-bottom:none}
+.iv-gauge{width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.iv-fill{height:100%;border-radius:3px}
+.iv-rank-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px}
+
+/* Rating stars */
+.rating{display:flex;gap:2px}
+.star{font-size:10px}
+
+/* Delta bar */
+.delta-bar{display:flex;align-items:center;gap:4px}
+.delta-num{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;min-width:38px}
+.delta-mini{height:4px;border-radius:2px;background:#00d4ff}
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo">
+      <div class="logo-icon">🐋</div>
+      <div>
+        <div class="logo-title">WHALE TRACKER</div>
+        <div class="logo-sub">OPTIONS FLOW INTEL</div>
+      </div>
+    </div>
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hs"><div class="hs-v" style="color:#00d4ff">$3.1B</div><div class="hs-l">تدفق اليوم</div></div>
+    <div class="hs"><div class="hs-v" style="color:#00ff88">71%</div><div class="hs-l">CALL</div></div>
+    <div class="hs"><div class="hs-v" style="color:#ff3355">29%</div><div class="hs-l">PUT</div></div>
+    <div class="hs"><div class="hs-v" style="color:#ffd700">1,024</div><div class="hs-l">نشطة</div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('dashboard',this)"><span class="ti">📊</span>لوحة</button>
+  <button class="tab" onclick="sw('whales',this)"><span class="ti">🐋</span>الحيتان</button>
+  <button class="tab" onclick="sw('flow',this)"><span class="ti">⚡</span>التدفق</button>
+  <button class="tab" onclick="sw('copy',this)"><span class="ti">📋</span>نسخ</button>
+  <button class="tab" onclick="sw('greeks',this)"><span class="ti">🔬</span>يونانيات</button>
+  <button class="tab" onclick="sw('liquidity',this)"><span class="ti">💧</span>السيولة</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="v-dashboard" class="view active">
+  <div class="mg">
+    <div class="mc b"><div class="ml">مراكز مفتوحة</div><div class="mv" style="color:#00d4ff">$1.2B</div><div class="ms">▲ 8.3% من أمس</div></div>
+    <div class="mc g"><div class="ml">معدل الربح</div><div class="mv" style="color:#00ff88">76%</div><div class="ms">عبر كل الحيتان</div></div>
+    <div class="mc o"><div class="ml">أكبر صفقة اليوم</div><div class="mv" style="color:#ffd700">$62M</div><div class="ms">NVDA CALL — 0DTE King</div></div>
+    <div class="mc p"><div class="ml">صفقات منسوخة</div><div class="mv" style="color:#9d4edd">312</div><div class="ms">من المستخدمين اليوم</div></div>
+  </div>
+  <div class="sl2">// اختر الحوت</div>
+  <div class="wsc" id="wscroll"></div>
+  <div class="card">
+    <div class="ch">
+      <div class="ct" id="ptitle">🦁 0DTE King — المراكز</div>
+      <button class="cab" onclick="copyAll()">⚡ نسخ الكل</button>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th>سهم</th><th>نوع</th><th>إضراب</th><th>انتهاء</th><th>عقود</th><th>دخول</th><th>P&amp;L</th><th>اتجاه</th><th></th>
+    </tr></thead><tbody id="pbody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="ch">
+      <div class="ct">⚡ آخر الإشارات — مارس 2026</div>
+      <div class="live-pill" style="font-size:9px;padding:3px 8px"><div class="live-dot"></div>REAL-TIME</div>
+    </div>
+    <div class="sl" id="slist"></div>
+  </div>
+</div>
+
+<!-- WHALES -->
+<div id="v-whales" class="view"><div id="wgrid"></div></div>
+
+<!-- FLOW -->
+<div id="v-flow" class="view">
+  <div class="sl2">// أضخم صفقات اليوم — مارس 2026</div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>وقت</th><th>سهم</th><th>نوع</th><th>إضراب</th><th>انتهاء</th><th>حجم</th><th>قيمة</th><th>حوت</th><th></th></tr></thead>
+    <tbody id="fbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- COPY -->
+<div id="v-copy" class="view">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:6px">📋 مركز نسخ الصفقات</div>
+    <div style="font-size:12px;color:var(--dim);line-height:1.7">فعّل النسخ التلقائي وحدد نسبة رأس المال. ستصلك تنبيهات فورية عند دخول صفقة جديدة.<br><span style="color:#ffd700">⚠️ الأوبشن مشتقات ذات رافعة عالية. لا تستثمر أكثر مما تتحمل خسارته.</span></div>
+  </div>
+  <div id="cgrid"></div>
+</div>
+
+
+<!-- GREEKS & LIQUIDITY VIEW -->
+<div id="v-greeks" class="view">
+
+  <!-- FILTER BAR -->
+  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;margin-bottom:12px">
+    <button class="gf-btn active" onclick="filterGreeks('all',this)">الكل</button>
+    <button class="gf-btn" onclick="filterGreeks('high-delta',this)">Delta عالي</button>
+    <button class="gf-btn" onclick="filterGreeks('high-gamma',this)">Gamma عالي</button>
+    <button class="gf-btn" onclick="filterGreeks('high-liq',this)">سيولة عالية</button>
+    <button class="gf-btn" onclick="filterGreeks('low-theta',this)">Theta منخفض</button>
+  </div>
+
+  <!-- GREEKS LEGEND -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">📖 دليل اليونانيات السريع</div></div>
+    <div style="padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="greek-info">
+        <div class="gi-sym" style="color:#00d4ff">Δ Delta</div>
+        <div class="gi-txt">حساسية العقد لحركة السهم. 0.5 = يتحرك 50 سنت لكل $1 في السهم</div>
+      </div>
+      <div class="greek-info">
+        <div class="gi-sym" style="color:#00ff88">Γ Gamma</div>
+        <div class="gi-txt">سرعة تغير الـ Delta. عالي = خطر/فرصة أكبر عند تحرك السهم</div>
+      </div>
+      <div class="greek-info">
+        <div class="gi-sym" style="color:#ff3355">Θ Theta</div>
+        <div class="gi-txt">تآكل العقد يومياً بسبب الوقت. سالب دائماً للمشتري</div>
+      </div>
+      <div class="greek-info">
+        <div class="gi-sym" style="color:#9d4edd">V Vega</div>
+        <div class="gi-txt">حساسية العقد للتقلب (IV). ارتفاع IV = ارتفاع قيمة العقد</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BEST OPTIONS BY GREEKS -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">🔬 أفضل العقود — تحليل يونانيات</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a6a80">مرتب حسب الجودة</div>
+    </div>
+    <div class="tw">
+      <table id="greeks-table">
+        <thead><tr>
+          <th>سهم</th>
+          <th>نوع</th>
+          <th>إضراب</th>
+          <th>Δ Delta</th>
+          <th>Γ Gamma</th>
+          <th>Θ Theta</th>
+          <th>V Vega</th>
+          <th>IV%</th>
+          <th>سيولة</th>
+          <th>تقييم</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="greeks-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LIQUIDITY SCANNER -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">💧 سكانر السيولة — أعلى Open Interest</div>
+    </div>
+    <div style="padding:12px" id="liq-grid"></div>
+  </div>
+
+  <!-- IV RANK -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">📊 IV Rank — رتبة التقلب الضمني</div>
+    </div>
+    <div style="padding:12px" id="iv-grid"></div>
+  </div>
+
+</div>
+
+
+<!-- LIQUIDITY TRACKER VIEW -->
+<div id="v-liquidity" class="view">
+
+  <!-- LIVE HEADER -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;color:#4a6a80;text-transform:uppercase">// تتبع السيولة اللحظي</div>
+    <div class="live-pill" style="font-size:9px;padding:3px 10px"><div class="live-dot"></div>LIVE SCAN</div>
+  </div>
+
+  <!-- TOP STATS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <div class="mc b" style="padding:12px;text-align:center">
+      <div style="font-size:9px;color:#4a6a80;margin-bottom:4px">إجمالي OI</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#00d4ff" id="total-oi">1.43M</div>
+      <div style="font-size:9px;color:#00ff88">▲ 3.2%</div>
+    </div>
+    <div class="mc g" style="padding:12px;text-align:center">
+      <div style="font-size:9px;color:#4a6a80;margin-bottom:4px">أعلى سيولة</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#00ff88">SPY</div>
+      <div style="font-size:9px;color:#4a6a80">312K OI</div>
+    </div>
+    <div class="mc o" style="padding:12px;text-align:center">
+      <div style="font-size:9px;color:#4a6a80;margin-bottom:4px">أعلى Vol/OI</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#ffd700">QQQ</div>
+      <div style="font-size:9px;color:#4a6a80">0.57 نسبة</div>
+    </div>
+  </div>
+
+  <!-- FILTER -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;margin-bottom:12px">
+    <button class="gf-btn active" onclick="filterLiq('all',this)">الكل</button>
+    <button class="gf-btn" onclick="filterLiq('call',this)">CALL فقط</button>
+    <button class="gf-btn" onclick="filterLiq('put',this)">PUT فقط</button>
+    <button class="gf-btn" onclick="filterLiq('hot',this)">🔥 ساخنة</button>
+    <button class="gf-btn" onclick="filterLiq('etf',this)">ETFs</button>
+  </div>
+
+  <!-- MAIN LIQUIDITY TRACKER -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">💧 تتبع السيولة — Open Interest & Volume</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a6a80" id="liq-update-time">10:38 AM</div>
+    </div>
+    <div id="liq-tracker-list" style="padding:8px 12px"></div>
+  </div>
+
+  <!-- VOL/OI RATIO -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">📈 نسبة Volume/OI — مؤشر النشاط</div>
+      <div style="font-size:10px;color:#4a6a80">نسبة >0.5 = نشاط عالي جداً</div>
+    </div>
+    <div id="voi-list" style="padding:8px 12px"></div>
+  </div>
+
+  <!-- BID-ASK SPREAD -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">↔️ Bid-Ask Spread — تكلفة الدخول</div>
+      <div style="font-size:10px;color:#4a6a80">أضيق = أفضل للتداول</div>
+    </div>
+    <div id="spread-list" style="padding:8px 12px"></div>
+  </div>
+
+  <!-- LIVE ALERTS -->
+  <div class="card">
+    <div class="ch">
+      <div class="ct">🚨 تنبيهات السيولة اللحظية</div>
+      <div class="live-pill" style="font-size:9px;padding:3px 8px"><div class="live-dot"></div>AUTO</div>
+    </div>
+    <div id="liq-alerts" style="max-height:220px;overflow-y:auto"></div>
+  </div>
+
+</div>
+
+
+<!-- MODAL -->
+<div class="mb" id="modal" onclick="closeModal(event)">
+  <div class="md" id="minner">
+    <div class="mh"></div>
+    <div class="mt">⚡ تأكيد نسخ الصفقة</div>
+    <div id="mbody"></div>
+    <div class="rb">⚠️ الأوبشن قد تنتهي بخسارة كاملة للقسط المدفوع. تأكد من فهمك الكامل للمخاطر.</div>
+    <div class="mbs">
+      <button class="bcon" onclick="confirmCopy()">✓ تأكيد</button>
+      <button class="bcan" onclick="closeModal()">✕ إلغاء</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const W=[
+  {id:0,e:'🦁',n:'0DTE King',h:'@OptionsKing_XBT',r:1,wr:86,pnl:'+$18.7M',tr:1580,col:'#00d4ff',
+   tags:[{l:'CALL',c:'tc'},{l:'0DTE',c:'ta'},{l:'STRADDLE',c:'tg'}],
+   pos:[
+    {s:'NVDA',t:'CALL',k:'$180',exp:'20 مارس 26',c:200,e:'$9.80',pnl:'+$312K',pct:'+70%',fl:'b'},
+    {s:'SPY', t:'CALL',k:'$670',exp:'20 مارس 26',c:350,e:'$4.20', pnl:'+$84K', pct:'+50%',fl:'b'},
+    {s:'AAPL',t:'PUT', k:'$255',exp:'27 مارس 26',c:90, e:'$4.20', pnl:'-$14K', pct:'-30%',fl:'n'},
+    {s:'TSLA',t:'CALL',k:'$410',exp:'3 أبريل 26',c:180,e:'$12.80',pnl:'+$138K',pct:'+67%',fl:'b'},
+    {s:'META',t:'CALL',k:'$650',exp:'20 مارس 26',c:65, e:'$19.40',pnl:'+$96K', pct:'+79%',fl:'b'},
+   ]},
+  {id:1,e:'🐯',n:'SortaPro Capital',h:'@SortaPro_Trades',r:2,wr:81,pnl:'+$13.2M',tr:1040,col:'#ffd700',
+   tags:[{l:'CALL SPREAD',c:'tc'},{l:'PUT',c:'tp'}],
+   pos:[
+    {s:'NVDA',t:'CALL',k:'$170',exp:'27 مارس 26',c:250,e:'$16.20',pnl:'+$670K',pct:'+40%',fl:'b'},
+    {s:'AMZN',t:'CALL',k:'$215',exp:'3 أبريل 26',c:130,e:'$7.60', pnl:'+$53K', pct:'+50%',fl:'b'},
+    {s:'MSFT',t:'PUT', k:'$410',exp:'20 مارس 26',c:60, e:'$10.20',pnl:'+$34K', pct:'+50%',fl:'n'},
+   ]},
+  {id:2,e:'🦊',n:'VolSlayer',h:'@VolSlayer_FX',r:3,wr:78,pnl:'+$9.4M',tr:710,col:'#9d4edd',
+   tags:[{l:'IRON CONDOR',c:'tg'},{l:'SPREAD',c:'ts'}],
+   pos:[
+    {s:'SPX', t:'CALL',k:'$6,700',exp:'20 مارس 26',c:35, e:'$31.00',pnl:'+$57K', pct:'+50%',fl:'b'},
+    {s:'QQQ', t:'PUT', k:'$420', exp:'27 مارس 26',c:110,e:'$9.80', pnl:'-$10K', pct:'-10%',fl:'n'},
+    {s:'GOOGL',t:'CALL',k:'$300',exp:'17 أبريل 26',c:95, e:'$11.60',pnl:'+$81K', pct:'+70%',fl:'b'},
+   ]},
+  {id:3,e:'🐻',n:'Bear Mafia',h:'@BearMafia_SPX',r:4,wr:73,pnl:'+$7.1M',tr:520,col:'#ff3355',
+   tags:[{l:'PUT SPREAD',c:'tp'},{l:'BEARISH',c:'tp'}],
+   pos:[
+    {s:'SPY',t:'PUT',k:'$660',exp:'20 مارس 26',c:450,e:'$3.40',pnl:'+$216K',pct:'+150%',fl:'n'},
+    {s:'IWM',t:'PUT',k:'$215',exp:'27 مارس 26',c:220,e:'$4.20',pnl:'+$40K', pct:'+40%', fl:'n'},
+   ]},
+  {id:4,e:'🦅',n:'TechOptions Pro',h:'@TechOpts_NASDAQ',r:5,wr:71,pnl:'+$5.8M',tr:440,col:'#00ff88',
+   tags:[{l:'CALL',c:'tc'},{l:'LEAPS',c:'ta'}],
+   pos:[
+    {s:'NVDA',t:'CALL',k:'$185',exp:'يناير 2027',c:55, e:'$31.50',pnl:'+$290K',pct:'+36%',fl:'b'},
+    {s:'AAPL',t:'CALL',k:'$260',exp:'يناير 2027',c:85, e:'$20.80', pnl:'+$76K', pct:'+40%',fl:'b'},
+    {s:'MSFT',t:'CALL',k:'$420',exp:'يناير 2027',c:65, e:'$42.00', pnl:'+$99K', pct:'+30%',fl:'b'},
+   ]},
+];
+
+const SIGS=[
+  {t:'09:45',x:'<strong>0DTE King</strong> دخل NVDA CALL $180 — مارس 2026',v:'+$312K',c:'#00ff88'},
+  {t:'09:52',x:'<strong>SortaPro</strong> زاد حجم NVDA CALL بـ 50 عقد',v:'$290K',c:'#00d4ff'},
+  {t:'10:03',x:'<strong>Bear Mafia</strong> دخل PUT ضخم على SPY $660',v:'$144K',c:'#ff3355'},
+  {t:'10:15',x:'<strong>VolSlayer</strong> ربح 50% على SPX CALL $6,700',v:'+$57K',c:'#00ff88'},
+  {t:'10:28',x:'<strong>0DTE King</strong> أغلق AAPL PUT بخسارة محدودة',v:'-$14K',c:'#ff3355'},
+  {t:'10:41',x:'<strong>TechOptions</strong> NVDA LEAPS اقترب من الهدف',v:'+36%',c:'#ffd700'},
+  {t:'10:55',x:'<strong>SortaPro</strong> دخل AMZN CALL $230 جديد',v:'$53K',c:'#00d4ff'},
+  {t:'11:12',x:'<strong>Bear Mafia</strong> زاد PUT على IWM بـ 100 عقد إضافي',v:'$46K',c:'#ff3355'},
+];
+
+const FL=[
+  {t:'09:45',s:'NVDA',tp:'CALL',k:'$180',exp:'20 مارس 26',v:'18,000',val:'$22M',wh:'0DTE King 🦁'},
+  {t:'09:52',s:'NVDA',tp:'CALL',k:'$170',exp:'27 مارس 26',v:'25,000',val:'$14.5M',wh:'SortaPro 🐯'},
+  {t:'10:03',s:'SPY', tp:'PUT', k:'$660',exp:'20 مارس 26',v:'45,000',val:'$14.4M',wh:'Bear Mafia 🐻'},
+  {t:'10:15',s:'SPX', tp:'CALL',k:'$6,700',exp:'20 مارس 26',v:'3,500',val:'$11.4M',wh:'VolSlayer 🦊'},
+  {t:'10:28',s:'TSLA',tp:'CALL',k:'$410',exp:'3 أبريل 26',v:'18,000',val:'$20.7M',wh:'0DTE King 🦁'},
+  {t:'10:41',s:'META',tp:'CALL',k:'$650',exp:'20 مارس 26',v:'6,500',val:'$12.1M',wh:'0DTE King 🦁'},
+  {t:'10:55',s:'AMZN',tp:'CALL',k:'$215',exp:'3 أبريل 26',v:'13,000',val:'$10.7M',wh:'SortaPro 🐯'},
+  {t:'11:12',s:'IWM', tp:'PUT', k:'$215',exp:'27 مارس 26',v:'22,000',val:'$10.1M',wh:'Bear Mafia 🐻'},
+];
+
+const LP=[
+  {x:'<strong>0DTE King</strong> تنبيه: NVDA تجاوزت الهدف 🎯',v:'+28%',c:'#00ff88'},
+  {x:'<strong>SortaPro</strong> دخل AMZN CALL $230 جديد',v:'$107K',c:'#00d4ff'},
+  {x:'<strong>VolSlayer</strong> GOOGL CALL +70% وصل الهدف',v:'+70%',c:'#00ff88'},
+  {x:'<strong>Bear Mafia</strong> زاد SPY PUT 100 عقد إضافي',v:'$32K',c:'#ff3355'},
+  {x:'<strong>TechOptions</strong> تنبيه: NVDA LEAPS مستمر في الارتفاع',v:'+36%',c:'#ffd700'},
+];
+
+let cw=0, sigs=[...SIGS], pend=null;
+
+function renderScroll(){
+  document.getElementById('wscroll').innerHTML=W.map((w,i)=>`
+    <div class="wb${i===cw?' active':''}" onclick="selW(${i})" style="border-color:${i===cw?w.col+'88':'var(--border)'}">
+      <div class="we">${w.e}</div>
+      <div class="wn">${w.n.split(' ')[0]}</div>
+      <div class="wr2">${w.wr}%</div>
+    </div>`).join('');
+}
+
+function renderPos(i){
+  const w=W[i];
+  document.getElementById('ptitle').textContent=w.e+' '+w.n+' — المراكز النشطة';
+  document.getElementById('pbody').innerHTML=w.pos.map((p,j)=>`
+    <tr>
+      <td><span class="tk">${p.s}</span></td>
+      <td><span class="ob ${p.t==='CALL'?'oc':'op'}">${p.t==='CALL'?'▲':'▼'} ${p.t}</span></td>
+      <td><span class="sk">${p.k}</span></td>
+      <td><span class="ex">${p.exp}</span></td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${p.c}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${p.e}</td>
+      <td class="${p.pnl.startsWith('+')?'pp':'pn'}">${p.pnl}<br><span style="font-size:10px;opacity:.7">${p.pct}</span></td>
+      <td><span class="${p.fl==='b'?'fb':'fn'}">${p.fl==='b'?'▲ صاعد':'▼ هابط'}</span></td>
+      <td><button class="cpb" onclick="oTM(${i},${j})">📋</button></td>
+    </tr>`).join('');
+}
+
+function renderSigs(){
+  document.getElementById('slist').innerHTML=sigs.map(s=>`
+    <div class="si">
+      <span class="st">${s.t}</span>
+      <div class="sd" style="background:${s.c}"></div>
+      <div class="sx">${s.x}</div>
+      <span class="sv" style="color:${s.c}">${s.v}</span>
+    </div>`).join('');
+}
+
+function renderFlow(){
+  document.getElementById('fbody').innerHTML=FL.map((f,i)=>`
+    <tr>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a6a80">${f.t}</td>
+      <td><span class="tk">${f.s}</span></td>
+      <td><span class="ob ${f.tp==='CALL'?'oc':'op'}">${f.tp==='CALL'?'▲':'▼'} ${f.tp}</span></td>
+      <td><span class="sk">${f.k}</span></td>
+      <td><span class="ex">${f.exp}</span></td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px">${f.v}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:#ffd700">${f.val}</td>
+      <td style="font-size:11px;white-space:nowrap">${f.wh}</td>
+      <td><button class="cpb" onclick="oFM(${i})">📋</button></td>
+    </tr>`).join('');
+}
+
+function renderWhales(){
+  document.getElementById('wgrid').innerHTML=W.map(w=>`
+    <div class="wd">
+      <div class="wdt">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:42px">${w.e}</div>
+          <div>
+            <div style="font-size:15px;font-weight:900;color:#fff">${w.n}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a6a80">${w.h}</div>
+          </div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:50px;color:#0d2035;line-height:1">#${w.r}</div>
+      </div>
+      <div class="wdr">
+        <div class="wds"><div class="wdv" style="color:#00ff88">${w.wr}%</div><div class="wdl">نسبة ربح</div></div>
+        <div class="wds"><div class="wdv" style="color:#ffd700;font-size:12px">${w.pnl}</div><div class="wdl">أرباح 2026</div></div>
+        <div class="wds"><div class="wdv" style="color:#00d4ff">${w.tr}</div><div class="wdl">صفقة</div></div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${w.tags.map(t=>`<span class="tag ${t.c}">${t.l}</span>`).join('')}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a6a80;letter-spacing:2px;margin-bottom:7px">// مراكز حالية</div>
+      ${w.pos.slice(0,3).map(p=>`
+        <div class="pm">
+          <span class="tk" style="font-size:14px">${p.s}</span>
+          <span class="ob ${p.t==='CALL'?'oc':'op'}" style="font-size:9px">${p.t}</span>
+          <span class="sk" style="font-size:11px">${p.k}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:${p.pnl.startsWith('+')?'#00ff88':'#ff3355'}">${p.pct}</span>
+        </div>`).join('')}
+      <button class="bva" onclick="selWG(${w.id})">📋 عرض كل المراكز ونسخها</button>
+    </div>`).join('');
+}
+
+function renderCopy(){
+  document.getElementById('cgrid').innerHTML=W.map((w,i)=>`
+    <div class="cc">
+      <div class="cct">
+        <div style="font-size:34px">${w.e}</div>
+        <div>
+          <div style="font-size:15px;font-weight:900;color:#fff">${w.n}</div>
+          <div style="font-size:11px;color:#00ff88">${w.wr}% نسبة ربح • ${w.pnl} أرباح</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#4a6a80;margin-bottom:5px">نسبة رأس المال للنسخ</div>
+      <input type="range" min="1" max="50" value="5" style="width:100%;accent-color:#00d4ff"
+        oninput="document.getElementById('rv${i}').textContent=this.value+'%'">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#00d4ff;text-align:center;margin-top:4px" id="rv${i}">5%</div>
+      <button class="ba" onclick="actCopy(${i})">⚡ تفعيل النسخ التلقائي</button>
+    </div>`).join('');
+}
+
+function selW(i){cw=i;renderScroll();renderPos(i);}
+function selWG(i){cw=i;sw('dashboard',document.querySelectorAll('.tab')[0]);setTimeout(()=>{renderScroll();renderPos(i);},60);}
+
+function sw(name,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('v-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='flow')renderFlow();
+  if(name==='whales')renderWhales();
+  if(name==='copy')renderCopy();
+}
+
+function oTM(wi,pi){
+  const w=W[wi],p=w.pos[pi]; pend={w,p};
+  document.getElementById('mbody').innerHTML=`
+    <div class="dr"><span class="dl">الحوت</span><span class="dv">${w.e} ${w.n}</span></div>
+    <div class="dr"><span class="dl">الصفقة</span><span class="dv">${p.s} ${p.t} ${p.k}</span></div>
+    <div class="dr"><span class="dl">تاريخ الانتهاء</span><span class="dv">${p.exp}</span></div>
+    <div class="dr"><span class="dl">سعر الدخول</span><span class="dv" style="color:#00d4ff">${p.e}</span></div>
+    <div class="dr"><span class="dl">أداء الصفقة</span><span class="dv" style="color:${p.pnl.startsWith('+')?'#00ff88':'#ff3355'}">${p.pnl} (${p.pct})</span></div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function oFM(i){
+  const f=FL[i]; pend={f};
+  document.getElementById('mbody').innerHTML=`
+    <div class="dr"><span class="dl">الحوت</span><span class="dv">${f.wh}</span></div>
+    <div class="dr"><span class="dl">الصفقة</span><span class="dv">${f.s} ${f.tp} ${f.k}</span></div>
+    <div class="dr"><span class="dl">الانتهاء</span><span class="dv">${f.exp}</span></div>
+    <div class="dr"><span class="dl">الحجم</span><span class="dv" style="color:#00d4ff">${f.v} عقد</span></div>
+    <div class="dr"><span class="dl">القيمة</span><span class="dv" style="color:#ffd700">${f.val}</span></div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('show');}
+function confirmCopy(){document.getElementById('modal').classList.remove('show');toast('✓ تمت إضافة الصفقة للنسخ!');}
+function copyAll(){toast('⚡ تم نسخ كل صفقات '+W[cw].n+'!');}
+function actCopy(i){toast('✓ تم تفعيل النسخ لـ '+W[i].n+'!');}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function addSig(){
+  const tm=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+  const s={...LP[Math.floor(Math.random()*LP.length)],t:tm};
+  sigs.unshift(s); if(sigs.length>12)sigs.pop();
+  const el=document.getElementById('slist');
+  const div=document.createElement('div');
+  div.className='si'; div.style.cssText='opacity:0;transition:opacity .4s';
+  div.innerHTML=`<span class="st">${s.t}</span><div class="sd" style="background:${s.c}"></div><div class="sx">${s.x}</div><span class="sv" style="color:${s.c}">${s.v}</span>`;
+  el.insertBefore(div,el.firstChild);
+  requestAnimationFrame(()=>div.style.opacity='1');
+  while(el.children.length>12)el.removeChild(el.lastChild);
+}
+
+renderScroll(); renderPos(0); renderSigs();
+setInterval(addSig,9000);
+
+// ═══════ GREEKS DATA ═══════
+const GD=[
+  {s:'SPY', t:'CALL',k:'$670',exp:'20 مارس',price:4.20, delta:0.51, gamma:0.018,theta:-0.14,vega:0.22,iv:18,oi:312400,vol24h:189600,type:'call',score:5},
+  {s:'SPY', t:'PUT', k:'$660',exp:'20 مارس',price:3.40, delta:-0.46,gamma:0.017,theta:-0.13,vega:0.21,iv:19,oi:284100,vol24h:142300,type:'put', score:5},
+  {s:'QQQ', t:'CALL',k:'$600',exp:'20 مارس',price:6.20, delta:0.50, gamma:0.016,theta:-0.16,vega:0.28,iv:22,oi:224800,vol24h:112400,type:'call',score:5},
+  {s:'QQQ', t:'PUT', k:'$590',exp:'20 مارس',price:5.40, delta:-0.47,gamma:0.015,theta:-0.15,vega:0.26,iv:23,oi:198400,vol24h:94200, type:'put', score:5},
+  {s:'NVDA',t:'CALL',k:'$180',exp:'27 مارس',price:12.60,delta:0.54, gamma:0.032,theta:-0.19,vega:0.42,iv:47,oi:94100, vol24h:38200, type:'call',score:5},
+  {s:'AAPL',t:'CALL',k:'$260',exp:'20 مارس',price:4.60, delta:0.48, gamma:0.022,theta:-0.18,vega:0.26,iv:28,oi:142800,vol24h:68400, type:'call',score:5},
+  {s:'AAPL',t:'PUT', k:'$255',exp:'20 مارس',price:4.20, delta:-0.46,gamma:0.021,theta:-0.17,vega:0.25,iv:29,oi:118600,vol24h:54200, type:'put', score:4},
+  {s:'NVDA',t:'CALL',k:'$180',exp:'20 مارس',price:9.80, delta:0.52, gamma:0.041,theta:-0.28,vega:0.31,iv:48,oi:85420, vol24h:42100, type:'call',score:5},
+  {s:'NVDA',t:'PUT', k:'$170',exp:'20 مارس',price:7.20, delta:-0.44,gamma:0.039,theta:-0.26,vega:0.29,iv:52,oi:71200, vol24h:31800, type:'put', score:4},
+  {s:'MSFT',t:'CALL',k:'$410',exp:'20 مارس',price:8.40, delta:0.51, gamma:0.019,theta:-0.21,vega:0.32,iv:26,oi:52400, vol24h:24800, type:'call',score:4},
+  {s:'MSFT',t:'PUT', k:'$405',exp:'20 مارس',price:6.80, delta:-0.44,gamma:0.018,theta:-0.19,vega:0.30,iv:27,oi:44800, vol24h:20200, type:'put', score:4},
+  {s:'META',t:'CALL',k:'$650',exp:'20 مارس',price:19.40,delta:0.50, gamma:0.012,theta:-0.42,vega:0.68,iv:38,oi:28400, vol24h:12800, type:'call',score:4},
+  {s:'TSLA',t:'CALL',k:'$400',exp:'20 مارس',price:12.80,delta:0.49, gamma:0.028,theta:-0.34,vega:0.44,iv:62,oi:48200, vol24h:22100, type:'call',score:4},
+  {s:'TSLA',t:'PUT', k:'$390',exp:'20 مارس',price:10.40,delta:-0.47,gamma:0.027,theta:-0.32,vega:0.42,iv:64,oi:41800, vol24h:18900, type:'put', score:3},
+  {s:'AMZN',t:'CALL',k:'$215',exp:'3 أبريل',price:7.60, delta:0.50, gamma:0.024,theta:-0.22,vega:0.34,iv:34,oi:38200, vol24h:17400, type:'call',score:4},
+  {s:'NVDA',t:'CALL',k:'$185',exp:'20 مارس',price:6.40, delta:0.38, gamma:0.038,theta:-0.24,vega:0.28,iv:51,oi:62300, vol24h:28400, type:'call',score:4},
+  {s:'SPY', t:'CALL',k:'$675',exp:'27 مارس',price:3.80, delta:0.40, gamma:0.015,theta:-0.11,vega:0.28,iv:17,oi:198400,vol24h:88200, type:'call',score:4},
+  {s:'META',t:'PUT', k:'$635',exp:'20 مارس',price:14.20,delta:-0.42,gamma:0.011,theta:-0.38,vega:0.64,iv:40,oi:22100, vol24h:9800,  type:'put', score:3},
+];
+
+const LIQ_D=[
+  {s:'SPY', type:'CALL',k:'$670',oi:312400,vol:189600,spread:0.01,pct:100},
+  {s:'SPY', type:'PUT', k:'$660',oi:284100,vol:142300,spread:0.01,pct:91},
+  {s:'QQQ', type:'CALL',k:'$600',oi:224800,vol:112400,spread:0.02,pct:72},
+  {s:'QQQ', type:'PUT', k:'$590',oi:198400,vol:94200, spread:0.02,pct:64},
+  {s:'AAPL',type:'CALL',k:'$260',oi:142800,vol:68400, spread:0.05,pct:46},
+  {s:'AAPL',type:'PUT', k:'$255',oi:118600,vol:54200, spread:0.05,pct:38},
+  {s:'NVDA',type:'CALL',k:'$180',oi:94100, vol:42100, spread:0.10,pct:30},
+  {s:'MSFT',type:'CALL',k:'$410',oi:52400, vol:24800, spread:0.08,pct:17},
+];
+
+const IV_D=[
+  {s:'TSLA', iv:63,ivrank:72,col:'#ff3355'},
+  {s:'NVDA', iv:48,ivrank:55,col:'#ffd700'},
+  {s:'META', iv:39,ivrank:42,col:'#ffd700'},
+  {s:'AMZN', iv:34,ivrank:38,col:'#00d4ff'},
+  {s:'AAPL', iv:28,ivrank:31,col:'#00ff88'},
+  {s:'MSFT', iv:26,ivrank:28,col:'#00ff88'},
+  {s:'QQQ',  iv:22,ivrank:24,col:'#00ff88'},
+  {s:'SPY',  iv:18,ivrank:20,col:'#00ff88'},
+];
+
+let gFilter='all';
+
+function renderGreeks(f){
+  let d=[...GD];
+  if(f==='high-delta') d=d.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+  else if(f==='high-gamma') d=d.sort((a,b)=>b.gamma-a.gamma);
+  else if(f==='high-liq') d=d.sort((a,b)=>b.oi-a.oi);
+  else if(f==='low-theta') d=d.sort((a,b)=>b.theta-a.theta);
+  else d=d.sort((a,b)=>b.score-a.score);
+
+  document.getElementById('greeks-body').innerHTML=d.map(r=>{
+    const stars='⭐'.repeat(r.score)+'☆'.repeat(5-r.score);
+    const lc=r.oi>100000?'#00ff88':r.oi>50000?'#00d4ff':r.oi>20000?'#ffd700':'#ff3355';
+    const ll=r.oi>100000?'🔥 ممتازة':r.oi>50000?'✅ عالية':r.oi>20000?'🟡 متوسطة':'🔴 منخفضة';
+    const dc=r.delta>0?'#00ff88':'#ff3355';
+    const tc2=r.theta<-0.30?'#ff3355':r.theta<-0.20?'#ffd700':'#00ff88';
+    const ic=r.iv>50?'#ff3355':r.iv>35?'#ffd700':'#00d4ff';
+    return`<tr>
+      <td><span class="tk">${r.s}</span></td>
+      <td><span class="ob ${r.type==='call'?'oc':'op'}">${r.type==='call'?'▲':'▼'} ${r.t}</span></td>
+      <td><span class="sk">${r.k}</span><br><span style="font-size:9px;color:#4a6a80">${r.exp}</span></td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${dc}">${r.delta>0?'+':''}${r.delta.toFixed(2)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#00ff88">${r.gamma.toFixed(3)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:${tc2}">${r.theta.toFixed(2)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9d4edd">${r.vega.toFixed(2)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:${ic}">${r.iv}%</td>
+      <td><span style="color:${lc};font-size:11px;font-weight:700">${ll}</span><br><span style="font-size:9px;color:#4a6a80">${(r.oi/1000).toFixed(0)}K OI</span></td>
+      <td style="font-size:12px">${stars}</td>
+      <td><button class="cpb" onclick="openTradeModal(0,0)">📋 نسخ</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderLiq(){
+  document.getElementById('liq-grid').innerHTML=LIQ_D.map(d=>{
+    const color=d.pct>80?'#00ff88':d.pct>50?'#00d4ff':d.pct>30?'#ffd700':'#ff3355';
+    return`<div class="liq-row">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:2px">${d.s}</span>
+          <span class="ob ${d.type==='CALL'?'oc':'op'}" style="font-size:9px">${d.type}</span>
+          <span class="sk" style="font-size:11px">${d.k}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:${color};margin-right:auto">${(d.oi/1000).toFixed(0)}K OI</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${d.pct}%;height:100%;background:${color};border-radius:4px;transition:width .6s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:9px;color:#4a6a80">Volume: <span style="color:#c8dff0">${(d.vol/1000).toFixed(0)}K</span></span>
+          <span style="font-size:9px;color:#4a6a80">Spread: <span style="color:#c8dff0">$${d.spread.toFixed(2)}</span></span>
+          <span style="font-size:9px;color:${color};font-weight:700">${d.pct===100?'أعلى سيولة':d.pct>60?'سيولة عالية':d.pct>30?'سيولة متوسطة':'سيولة منخفضة'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderIV(){
+  document.getElementById('iv-grid').innerHTML=IV_D.map(d=>{
+    const rc=d.ivrank>60?'#ff3355':d.ivrank>40?'#ffd700':'#00ff88';
+    const rl=d.ivrank>70?'مرتفع جداً':d.ivrank>50?'مرتفع — حذر':d.ivrank>30?'معتدل':'منخفض — شراء';
+    return`<div class="iv-row">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:2px;min-width:55px">${d.s}</span>
+      <div style="flex:1;margin:0 12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:10px;color:#4a6a80">IV: <span style="color:${d.col};font-family:'IBM Plex Mono',monospace;font-weight:700">${d.iv}%</span></span>
+          <span style="font-size:10px;color:#4a6a80">Rank: <span style="color:${rc};font-family:'IBM Plex Mono',monospace;font-weight:700">${d.ivrank}</span></span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${d.ivrank}%;height:100%;background:${rc};border-radius:4px"></div>
+        </div>
+      </div>
+      <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;background:${rc}22;color:${rc};border:1px solid ${rc}44;white-space:nowrap">${rl}</span>
+    </div>`;
+  }).join('');
+}
+
+function filterGreeks(type,btn){
+  gFilter=type;
+  document.querySelectorAll('.gf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGreeks(type);
+}
+
+// ═══════ LIQUIDITY TRACKER DATA ═══════
+const LIQ_FULL=[
+  {s:'SPY', t:'CALL',k:'$670',exp:'20 مارس',oi:312400,vol:189600,bid:4.15,ask:4.25,spread:0.10,delta:0.51,cat:'etf'},
+  {s:'SPY', t:'PUT', k:'$660',exp:'20 مارس',oi:284100,vol:142300,bid:3.35,ask:3.45,spread:0.10,delta:-0.46,cat:'etf'},
+  {s:'QQQ', t:'CALL',k:'$600',exp:'20 مارس',oi:224800,vol:112400,bid:6.15,ask:6.25,spread:0.10,delta:0.50,cat:'etf'},
+  {s:'QQQ', t:'PUT', k:'$590',exp:'20 مارس',oi:198400,vol:94200, bid:5.35,ask:5.45,spread:0.10,delta:-0.47,cat:'etf'},
+  {s:'SPY', t:'CALL',k:'$675',exp:'27 مارس',oi:188200,vol:88400, bid:3.75,ask:3.85,spread:0.10,delta:0.40,cat:'etf'},
+  {s:'AAPL',t:'CALL',k:'$260',exp:'20 مارس',oi:142800,vol:68400, bid:4.55,ask:4.65,spread:0.10,delta:0.48,cat:'stock'},
+  {s:'AAPL',t:'PUT', k:'$255',exp:'20 مارس',oi:118600,vol:54200, bid:4.15,ask:4.25,spread:0.10,delta:-0.46,cat:'stock'},
+  {s:'NVDA',t:'CALL',k:'$180',exp:'27 مارس',oi:94100, vol:42100, bid:12.40,ask:12.80,spread:0.40,delta:0.54,cat:'stock'},
+  {s:'NVDA',t:'CALL',k:'$180',exp:'20 مارس',oi:85420, vol:38200, bid:9.60,ask:10.00,spread:0.40,delta:0.52,cat:'stock'},
+  {s:'NVDA',t:'CALL',k:'$185',exp:'20 مارس',oi:62300, vol:28400, bid:6.20,ask:6.60,spread:0.40,delta:0.38,cat:'stock'},
+  {s:'NVDA',t:'PUT', k:'$170',exp:'20 مارس',oi:71200, vol:31800, bid:7.00,ask:7.40,spread:0.40,delta:-0.44,cat:'stock'},
+  {s:'MSFT',t:'CALL',k:'$410',exp:'20 مارس',oi:52400, vol:24800, bid:8.20,ask:8.60,spread:0.40,delta:0.51,cat:'stock'},
+  {s:'MSFT',t:'PUT', k:'$405',exp:'20 مارس',oi:44800, vol:20200, bid:6.60,ask:7.00,spread:0.40,delta:-0.44,cat:'stock'},
+  {s:'TSLA',t:'CALL',k:'$400',exp:'20 مارس',oi:48200, vol:22100, bid:12.40,ask:13.20,spread:0.80,delta:0.49,cat:'stock'},
+  {s:'TSLA',t:'PUT', k:'$390',exp:'20 مارس',oi:41800, vol:18900, bid:10.00,ask:10.80,spread:0.80,delta:-0.47,cat:'stock'},
+  {s:'AMZN',t:'CALL',k:'$215',exp:'3 أبريل',oi:38200, vol:17400, bid:7.40,ask:7.80,spread:0.40,delta:0.50,cat:'stock'},
+  {s:'META',t:'CALL',k:'$650',exp:'20 مارس',oi:28400, vol:12800, bid:19.00,ask:19.80,spread:0.80,delta:0.50,cat:'stock'},
+  {s:'META',t:'PUT', k:'$635',exp:'20 مارس',oi:22100, vol:9800,  bid:13.80,ask:14.60,spread:0.80,delta:-0.42,cat:'stock'},
+];
+
+const LIQ_ALERTS_POOL=[
+  {txt:'SPY CALL $670 — تضاعف الحجم 3x في آخر 15 دقيقة',col:'#00ff88',icon:'🔥',val:'+312K OI'},
+  {txt:'QQQ CALL $600 — دخول كبير جديد 8,400 عقد',col:'#00d4ff',icon:'🐋',val:'$5.2M'},
+  {txt:'NVDA CALL $180 — OI ارتفع 15% في ساعة',col:'#ffd700',icon:'📈',val:'+12.4K'},
+  {txt:'AAPL CALL $260 — Spread ضيق جداً $0.10 فرصة',col:'#00ff88',icon:'✅',val:'سيولة ممتازة'},
+  {txt:'SPY PUT $660 — تراجع OI 5% مع ارتفاع Vol',col:'#ff3355',icon:'⚠️',val:'انتبه'},
+  {txt:'TSLA CALL $400 — نشاط غير عادي 2.5x المتوسط',col:'#9d4edd',icon:'🚨',val:'$3.8M جديد'},
+  {txt:'META CALL $650 — دخول حوت OTM بعيد',col:'#ffd700',icon:'🐋',val:'$2.1M'},
+  {txt:'MSFT CALL $410 — OI استقر بعد ارتفاع 8%',col:'#00d4ff',icon:'📊',val:'52.4K OI'},
+];
+
+let liqFilter='all';
+let liqAlerts=[];
+
+function getLiqData(){
+  if(liqFilter==='call') return LIQ_FULL.filter(d=>d.t==='CALL');
+  if(liqFilter==='put')  return LIQ_FULL.filter(d=>d.t==='PUT');
+  if(liqFilter==='hot')  return LIQ_FULL.filter(d=>d.vol/d.oi>0.45);
+  if(liqFilter==='etf')  return LIQ_FULL.filter(d=>d.cat==='etf');
+  return LIQ_FULL;
+}
+
+function renderLiqTracker(){
+  const data=getLiqData().sort((a,b)=>b.oi-a.oi);
+  const maxOI=data[0]?.oi||1;
+  document.getElementById('liq-tracker-list').innerHTML=data.map((d,i)=>{
+    const pct=Math.round(d.oi/maxOI*100);
+    const voiRatio=(d.vol/d.oi).toFixed(2);
+    const liqCol=d.oi>200000?'#00ff88':d.oi>100000?'#00d4ff':d.oi>50000?'#ffd700':'#ff8800';
+    const liqLabel=d.oi>200000?'🔥 ممتازة':d.oi>100000?'✅ عالية جداً':d.oi>50000?'🟡 عالية':'🟠 متوسطة';
+    const spreadCol=d.spread<=0.10?'#00ff88':d.spread<=0.40?'#ffd700':'#ff3355';
+    const rank=i+1;
+    return`<div style="padding:10px 0;border-bottom:1px solid rgba(13,32,53,.5)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4a6a80;min-width:18px">#${rank}</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:2px">${d.s}</span>
+        <span class="ob ${d.t==='CALL'?'oc':'op'}" style="font-size:9px">${d.t}</span>
+        <span class="sk" style="font-size:11px">${d.k}</span>
+        <span style="font-size:9px;color:#4a6a80">${d.exp}</span>
+        <span style="margin-right:auto;font-size:10px;font-weight:700;color:${liqCol}">${liqLabel}</span>
+      </div>
+      <div style="height:8px;background:#0d2035;border-radius:4px;overflow:hidden;margin-bottom:6px">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,${liqCol},${liqCol}88);border-radius:4px;transition:width .8s ease"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+        <div style="background:#0a1520;border-radius:6px;padding:5px;text-align:center">
+          <div style="font-size:8px;color:#4a6a80">Open Interest</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${liqCol}">${(d.oi/1000).toFixed(0)}K</div>
+        </div>
+        <div style="background:#0a1520;border-radius:6px;padding:5px;text-align:center">
+          <div style="font-size:8px;color:#4a6a80">Volume</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#c8dff0">${(d.vol/1000).toFixed(0)}K</div>
+        </div>
+        <div style="background:#0a1520;border-radius:6px;padding:5px;text-align:center">
+          <div style="font-size:8px;color:#4a6a80">Vol/OI</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${parseFloat(voiRatio)>0.5?'#00ff88':parseFloat(voiRatio)>0.3?'#ffd700':'#4a6a80'}">${voiRatio}</div>
+        </div>
+        <div style="background:#0a1520;border-radius:6px;padding:5px;text-align:center">
+          <div style="font-size:8px;color:#4a6a80">Spread</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:${spreadCol}">$${d.spread.toFixed(2)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderVOI(){
+  const data=[...LIQ_FULL].map(d=>({...d,voi:d.vol/d.oi})).sort((a,b)=>b.voi-a.voi).slice(0,8);
+  document.getElementById('voi-list').innerHTML=data.map(d=>{
+    const pct=Math.min(100,Math.round(d.voi*100));
+    const col=d.voi>0.5?'#00ff88':d.voi>0.3?'#ffd700':'#4a6a80';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(13,32,53,.4)">
+      <div style="min-width:90px;display:flex;align-items:center;gap:5px">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff">${d.s}</span>
+        <span class="ob ${d.t==='CALL'?'oc':'op'}" style="font-size:8px">${d.t}</span>
+      </div>
+      <div style="flex:1">
+        <div style="height:7px;background:#0d2035;border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:3px"></div>
+        </div>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${col};min-width:40px;text-align:left">${d.voi.toFixed(2)}</div>
+      <div style="font-size:10px;color:${col};min-width:60px;text-align:center">${d.voi>0.5?'🔥 ساخن جداً':d.voi>0.3?'📈 نشط':'📊 عادي'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSpread(){
+  const data=[...LIQ_FULL].sort((a,b)=>a.spread-b.spread);
+  document.getElementById('spread-list').innerHTML=data.map(d=>{
+    const col=d.spread<=0.10?'#00ff88':d.spread<=0.40?'#ffd700':'#ff3355';
+    const label=d.spread<=0.10?'✅ ممتاز':d.spread<=0.40?'🟡 جيد':'🔴 واسع';
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(13,32,53,.4)">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;min-width:50px">${d.s}</span>
+      <span class="ob ${d.t==='CALL'?'oc':'op'}" style="font-size:8px">${d.t}</span>
+      <span class="sk" style="font-size:10px">${d.k}</span>
+      <div style="flex:1;display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:#4a6a80">Bid: <span style="color:#c8dff0">${d.bid.toFixed(2)}</span></span>
+        <span style="font-size:10px;color:#4a6a80">Ask: <span style="color:#c8dff0">${d.ask.toFixed(2)}</span></span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${col}">$${d.spread.toFixed(2)}</span>
+      <span style="font-size:10px;color:${col}">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+function addLiqAlert(){
+  const now=new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});
+  const a={...LIQ_ALERTS_POOL[Math.floor(Math.random()*LIQ_ALERTS_POOL.length)],t:now};
+  liqAlerts.unshift(a);
+  if(liqAlerts.length>10) liqAlerts.pop();
+  const el=document.getElementById('liq-alerts');
+  if(!el) return;
+  const div=document.createElement('div');
+  div.style.cssText='opacity:0;transition:opacity .4s;display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(13,32,53,.4)';
+  div.innerHTML=`<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a6a80;min-width:42px">${a.t}</span>
+    <span style="font-size:16px">${a.icon}</span>
+    <span style="flex:1;font-size:11px;color:#c8dff0;line-height:1.4">${a.txt}</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:${a.col};white-space:nowrap">${a.val}</span>`;
+  el.insertBefore(div,el.firstChild);
+  requestAnimationFrame(()=>div.style.opacity='1');
+  while(el.children.length>10) el.removeChild(el.lastChild);
+  // update timestamp
+  const tu=document.getElementById('liq-update-time');
+  if(tu) tu.textContent=now;
+}
+
+function filterLiq(type,btn){
+  liqFilter=type;
+  document.querySelectorAll('#v-liquidity .gf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLiqTracker();
+}
+
+const _sw=sw;
+sw=function(name,btn){
+  _sw(name,btn);
+  if(name==='greeks'){renderGreeks(gFilter);renderLiq();renderIV();}
+  if(name==='liquidity'){renderLiqTracker();renderVOI();renderSpread();}
+};
+
+// Initial alert + auto refresh every 12s
+// Initial alert + auto refresh every 12s
+addLiqAlert();
+setInterval(addLiqAlert,12000);
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║       POLYGON (MASSIVE) API — بيانات أوبشن حقيقية           ║
+// ║       مفتاح API مُفعّل: MieAA3dSc0FE4BCVRT_c3ZGxbce1Hgct   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const POLY_KEY  = 'MieAA3dSc0FE4BCVRT_c3ZGxbce1Hgct';
+const POLY_BASE = 'https://api.polygon.io';
+
+// helper مع Authorization header يحل CORS
+async function pFetch(url) {
+  const r = await fetch(url, {headers:{'Authorization':'Bearer '+POLY_KEY}});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+// ── جلب البيانات من Polygon ──
+const POLY = {
+
+  // سعر السهم الأساسي
+  async getStockPrice(symbol) {
+    try {
+      const r = await pFetch(POLY_BASE+'/v2/last/trade/'+symbol);
+      const d = await r.json();
+      return d.results?.p || null;
+    } catch(e) { return null; }
+  },
+
+  // snapshot كامل لسهم (سعر + تغير)
+  async getSnapshot(symbol) {
+    try {
+      const r = await pFetch(POLY_BASE+'/v2/snapshot/locale/us/markets/stocks/tickers/'+symbol);
+      const d = await r.json();
+      const t = d.ticker;
+      return {
+        symbol,
+        price:     t?.day?.c || t?.prevDay?.c,
+        change:    t?.todaysChange,
+        changePct: t?.todaysChangePerc,
+        volume:    t?.day?.v,
+        open:      t?.day?.o,
+        high:      t?.day?.h,
+        low:       t?.day?.l,
+      };
+    } catch(e) { return null; }
+  },
+
+  // سلسلة عقود الأوبشن لسهم معين
+  async getOptionsChain(symbol, expiry = null) {
+    try {
+      let url = POLY_BASE+'/v3/snapshot/options/'+symbol+'?limit=50';
+      if (expiry) url += '&expiration_date='+expiry;
+      const d = await pFetch(url);
+      return d.results || [];
+    } catch(e) { return []; }
+  },
+
+  // snapshot لعقد أوبشن واحد مع Greeks
+  async getOptionSnapshot(optionTicker) {
+    try {
+      const r = await pFetch(POLY_BASE+'/v3/snapshot/options/'+optionTicker);
+      const d = await r.json();
+      return d.results?.[0] || null;
+    } catch(e) { return null; }
+  },
+
+  // أعلى عقود الأوبشن نشاطاً (unusual activity)
+  async getTopOptions(symbol) {
+    try {
+      const r = await pFetch(POLY_BASE+'/v3/snapshot/options/'+symbol+'?limit=20&sort=day.volume&order=desc');
+      const d = await r.json();
+      return d.results || [];
+    } catch(e) { return []; }
+  },
+
+  // تحديث أسعار الأسهم في لوحة الحيتان
+  async refreshPrices() {
+    const symbols = ['NVDA','SPY','AAPL','TSLA','META','QQQ','MSFT','AMZN'];
+    for (const sym of symbols) {
+      const snap = await POLY.getSnapshot(sym);
+      if (snap) POLY._updatePriceBadge(sym, snap);
+    }
+  },
+
+  // تحديث بيانات تبويب اليونانيات
+  async refreshGreeks(symbol = 'NVDA') {
+    const chain = await POLY.getTopOptions(symbol);
+    if (!chain.length) return;
+    POLY._updateGreeksUI(chain);
+  },
+
+  // تحديث بيانات السيولة
+  async refreshLiquidity(symbol = 'SPY') {
+    const chain = await POLY.getTopOptions(symbol);
+    if (!chain.length) return;
+    POLY._updateLiqUI(chain);
+  },
+
+  // ── تحديث UI ──
+  _updatePriceBadge(symbol, snap) {
+    if (!snap) return;
+    const col = (snap.changePct||0) >= 0 ? '#00ff88' : '#ff3355';
+    const sign = (snap.changePct||0) >= 0 ? '▲' : '▼';
+    // تحديث أي عنصر يحمل data-symbol
+    document.querySelectorAll(`[data-price="${symbol}"]`).forEach(el => {
+      el.textContent = `$${snap.price?.toFixed(2)}`;
+      el.style.color = col;
+    });
+    console.log(`✅ ${symbol}: $${snap.price?.toFixed(2)} ${sign}${Math.abs(snap.changePct||0).toFixed(2)}%`);
+  },
+
+  _updateGreeksUI(chain) {
+    // ربط مع renderGreeks
+    window._polyGreeksData = chain.map(c => ({
+      s:     c.details?.underlying_asset?.ticker || '—',
+      t:     c.details?.contract_type === 'call' ? 'CALL' : 'PUT',
+      k:     `$${c.details?.strike_price}`,
+      exp:   c.details?.expiration_date,
+      delta: c.greeks?.delta?.toFixed(3),
+      gamma: c.greeks?.gamma?.toFixed(4),
+      theta: c.greeks?.theta?.toFixed(3),
+      vega:  c.greeks?.vega?.toFixed(3),
+      iv:    c.implied_volatility ? (c.implied_volatility*100).toFixed(1)+'%' : '—',
+      oi:    c.open_interest,
+      vol:   c.day?.volume,
+      bid:   c.last_quote?.bid,
+      ask:   c.last_quote?.ask,
+    }));
+    console.log(`✅ Greeks updated: ${window._polyGreeksData.length} contracts`);
+  },
+
+  _updateLiqUI(chain) {
+    window._polyLiqData = chain;
+    console.log(`✅ Liquidity updated: ${chain.length} contracts`);
+  },
+
+  // ── حالة الاتصال ──
+  _showStatus(status) {
+    const pill = document.querySelector('.live-pill');
+    if (!pill) return;
+    const labels = {
+      'live':    { text:'POLY LIVE', color:'#00ff88' },
+      'error':   { text:'API ERR',   color:'#ff3355' },
+      'loading': { text:'LOADING',   color:'#ffd700' },
+    };
+    const l = labels[status] || labels['live'];
+    pill.style.borderColor = l.color+'44';
+    pill.style.color = l.color;
+    pill.querySelector('.live-dot').style.background = l.color;
+    pill.childNodes[1].textContent = l.text;
+  },
+
+  // ── تشغيل التحديث التلقائي ──
+  async init() {
+    POLY._showStatus('loading');
+    try {
+      // اختبار الاتصال
+      const test = await POLY.getSnapshot('SPY');
+      if (test?.price) {
+        POLY._showStatus('live');
+        showLiveBanner();
+        // تحديث كل 15 ثانية
+        await POLY.refreshPrices();
+        setInterval(POLY.refreshPrices, 15000);
+        // تحديث Greeks كل 30 ثانية
+        await POLY.refreshGreeks('NVDA');
+        setInterval(() => POLY.refreshGreeks('NVDA'), 30000);
+        console.log('🚀 Polygon API Connected! SPY:', test.price);
+      } else {
+        POLY._showStatus('error');
+      }
+    } catch(e) {
+      POLY._showStatus('error');
+      console.error('Polygon API Error:', e);
+    }
+  }
+};
+
+// ── بانر الاتصال الحي ──
+function showLiveBanner() {
+  const old = document.getElementById('api-banner');
+  if (old) old.remove();
+  const b = document.createElement('div');
+  b.id = 'api-banner';
+  b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:1000;background:linear-gradient(135deg,#020a10,#041a10);border-top:1px solid rgba(0,255,136,.25);padding:10px 16px;display:flex;align-items:center;gap:10px';
+  b.innerHTML = `
+    <div style="width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88"></div>
+    <div style="flex:1">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#00ff88;font-weight:700">POLYGON LIVE — بيانات أوبشن حقيقية ✅</div>
+      <div style="font-size:9px;color:#4a6a80;margin-top:1px">OPRA Feed · Greeks · IV · Real-Time</div>
+    </div>
+    <button onclick="document.getElementById('api-banner').style.display='none'" style="background:transparent;border:none;color:#4a6a80;font-size:16px;cursor:pointer">✕</button>
+  `;
+  document.body.appendChild(b);
+}
+
+// ── ابدأ ──
+POLY.init();
+</script>
+
+</body>
+</html>
