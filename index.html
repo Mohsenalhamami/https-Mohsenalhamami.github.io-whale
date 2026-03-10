@@ -965,21 +965,11 @@ const POLY_BASE = 'https://api.polygon.io';
 
 // helper مع Authorization header يحل CORS
 async function pFetch(url) {
-  // أضف apiKey في الـ URL كـ fallback
   const sep = url.includes('?') ? '&' : '?';
   const fullUrl = url + sep + 'apiKey=' + POLY_KEY;
-  const r = await fetch(fullUrl, {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + POLY_KEY,
-    },
-    mode: 'cors'
-  });
-  if(!r.ok) {
-    const txt = await r.text().catch(()=>'');
-    throw new Error('HTTP ' + r.status + ' ' + txt.slice(0,100));
-  }
-  return r.json();
+  const r = await fetch(fullUrl, { mode: 'cors' });
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r; // نرجع الـ response object
 }
 
 // ── جلب البيانات من Polygon ──
@@ -999,18 +989,20 @@ const POLY = {
     try {
       const r = await pFetch(POLY_BASE+'/v2/snapshot/locale/us/markets/stocks/tickers/'+symbol);
       const d = await r.json();
+      console.log('📊 Polygon '+symbol+':', JSON.stringify(d).slice(0,300));
       const t = d.ticker;
+      const price = t?.day?.c || t?.prevDay?.c || t?.min?.c;
       return {
         symbol,
-        price:     t?.day?.c || t?.prevDay?.c,
-        change:    t?.todaysChange,
-        changePct: t?.todaysChangePerc,
-        volume:    t?.day?.v,
-        open:      t?.day?.o,
-        high:      t?.day?.h,
-        low:       t?.day?.l,
+        price,
+        change:    t?.todaysChange || 0,
+        changePct: t?.todaysChangePerc || 0,
+        volume:    t?.day?.v || 0,
+        open:      t?.day?.o || 0,
+        high:      t?.day?.h || 0,
+        low:       t?.day?.l || 0,
       };
-    } catch(e) { return null; }
+    } catch(e) { console.error('❌ getSnapshot '+symbol, e); return null; }
   },
 
   // سلسلة عقود الأوبشن لسهم معين
@@ -1124,6 +1116,7 @@ const POLY = {
     try {
       // اختبار الاتصال
       const test = await POLY.getSnapshot('SPY');
+      console.log('Test result:', test);
       if (test?.price) {
         POLY._showStatus('live');
         showLiveBanner();
