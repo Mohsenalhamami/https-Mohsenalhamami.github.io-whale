@@ -333,6 +333,21 @@ tr:last-child td{border-bottom:none}
 
 </div>
 
+<!-- OPTIONS CHAIN LIVE -->
+<div class="card" style="margin:0 0 12px">
+  <div class="ch">
+    <span class="ct">⚡ عقود الأوبشن المباشرة — Yahoo Finance</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="btn-calls" onclick="tab='calls';refreshOptionsDisplay(currentSymbol)" style="padding:3px 10px;border-radius:4px;border:1px solid var(--green);background:var(--green);color:#000;font-size:11px;cursor:pointer;font-weight:700">CALL</button>
+      <button id="btn-puts" onclick="tab='puts';refreshOptionsDisplay(currentSymbol)" style="padding:3px 10px;border-radius:4px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:11px;cursor:pointer;font-weight:700">PUT</button>
+      <span id="options-timer" style="color:var(--dim);font-size:9px">⏳</span>
+    </div>
+  </div>
+  <div id="options-chain-container" style="overflow-x:auto;min-height:80px">
+    <div style="color:var(--dim);text-align:center;padding:20px;font-size:12px">⏳ جاري التحميل...</div>
+  </div>
+</div>
+
 
 <!-- LIQUIDITY TRACKER VIEW -->
 <div id="v-liquidity" class="view">
@@ -608,6 +623,15 @@ function sw(name,btn){
   if(name==='flow')renderFlow();
   if(name==='whales')renderWhales();
   if(name==='copy')renderCopy();
+  if(name==='greeks'){
+    refreshOptionsDisplay(currentSymbol);
+    if(optionsRefreshTimer) clearInterval(optionsRefreshTimer);
+    optionsRefreshTimer = setInterval(()=>{
+      refreshOptionsDisplay(currentSymbol);
+    }, 5000);
+  } else {
+    if(optionsRefreshTimer){ clearInterval(optionsRefreshTimer); optionsRefreshTimer=null; }
+  }
 }
 
 function oTM(wi,pi){
@@ -969,8 +993,120 @@ async function pFetch(url) {
   const fullUrl = url + sep + 'apiKey=' + POLY_KEY;
   const r = await fetch(fullUrl, { mode: 'cors' });
   if(!r.ok) throw new Error('HTTP ' + r.status);
-  return r; // نرجع الـ response object
+  return r;
 }
+
+// Yahoo Finance - مجاني وبدون قيود للعقود
+async function yFetch(symbol) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v7/finance/options/${symbol}`;
+    const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('Yahoo HTTP ' + r.status);
+    return r.json();
+  } catch(e) {
+    // Fallback: use allorigins proxy
+    try {
+      const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://query1.finance.yahoo.com/v7/finance/options/'+symbol)}`;
+      const r2 = await fetch(proxy);
+      return r2.json();
+    } catch(e2) { return null; }
+  }
+}
+
+// جلب عقود الأوبشن من Yahoo Finance
+async function getYahooOptions(symbol) {
+  try {
+    const data = await yFetch(symbol);
+    if (!data?.optionChain?.result?.[0]) return null;
+    const chain = data.optionChain.result[0];
+    const options = chain.options?.[0];
+    const quote = chain.quote;
+    return {
+      symbol,
+      price: quote?.regularMarketPrice || quote?.ask,
+      calls: (options?.calls || []).slice(0, 10).map(c => ({
+        strike: c.strike,
+        expiry: new Date(c.expiration * 1000).toLocaleDateString('ar-SA'),
+        bid: c.bid,
+        ask: c.ask,
+        iv: ((c.impliedVolatility || 0) * 100).toFixed(1),
+        volume: c.volume || 0,
+        oi: c.openInterest || 0,
+        delta: c.delta || '--',
+        type: 'CALL'
+      })),
+      puts: (options?.puts || []).slice(0, 10).map(p => ({
+        strike: p.strike,
+        expiry: new Date(p.expiration * 1000).toLocaleDateString('ar-SA'),
+        bid: p.bid,
+        ask: p.ask,
+        iv: ((p.impliedVolatility || 0) * 100).toFixed(1),
+        volume: p.volume || 0,
+        oi: p.openInterest || 0,
+        delta: p.delta || '--',
+        type: 'PUT'
+      }))
+    };
+  } catch(e) { console.error('Yahoo options error:', e); return null; }
+}
+
+let currentSymbol = 'NVDA';
+let optionsCache = {};
+let optionsRefreshTimer = null;
+
+async function refreshOptionsDisplay(symbol) {
+  currentSymbol = symbol;
+  const container = document.getElementById('options-chain-container');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--dim);text-align:center;padding:20px">⏳ جاري تحميل العقود...</div>';
+  const data = await getYahooOptions(symbol);
+  if (!data) {
+    container.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px">❌ تعذّر تحميل العقود</div>';
+    return;
+  }
+  optionsCache[symbol] = data;
+  renderOptionsChain(data, container);
+}
+
+function renderOptionsChain(data, container) {
+  const rows = (tab === 'calls' ? data.calls : data.puts).map(o => `
+    <tr style="border-bottom:1px solid var(--border);font-size:11px">
+      <td style="padding:6px 8px;color:${o.type==='CALL'?'var(--green)':'var(--red)'}">$${o.strike}</td>
+      <td style="padding:6px 8px">${o.expiry}</td>
+      <td style="padding:6px 8px;color:var(--accent)">${o.bid}/${o.ask}</td>
+      <td style="padding:6px 8px;color:var(--gold)">${o.iv}%</td>
+      <td style="padding:6px 8px">${(o.volume||0).toLocaleString()}</td>
+      <td style="padding:6px 8px;color:var(--dim)">${(o.oi||0).toLocaleString()}</td>
+    </tr>
+  `).join('');
+  container.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <span style="color:var(--text);font-weight:700">${data.symbol}</span>
+      <span style="color:var(--green);font-size:13px">$${data.price?.toFixed(2)||'--'}</span>
+      <div style="display:flex;gap:4px;margin-right:auto">
+        ${['NVDA','SPY','AAPL','TSLA','META','AMZN'].map(s=>
+          `<button onclick="refreshOptionsDisplay('${s}')" style="padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:${s===data.symbol?'var(--accent)':'var(--surface)'};color:var(--text);font-size:10px;cursor:pointer">${s}</button>`
+        ).join('')}
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="color:var(--dim);font-size:10px;border-bottom:1px solid var(--border)">
+          <th style="padding:6px 8px;text-align:right">الإضراب</th>
+          <th style="padding:6px 8px;text-align:right">الانتهاء</th>
+          <th style="padding:6px 8px;text-align:right">Bid/Ask</th>
+          <th style="padding:6px 8px;text-align:right">IV%</th>
+          <th style="padding:6px 8px;text-align:right">حجم</th>
+          <th style="padding:6px 8px;text-align:right">OI</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="color:var(--dim);font-size:9px;margin-top:8px;text-align:left">📡 Yahoo Finance • يتجدد كل 5 ثوانٍ</div>
+  `;
+}
+let tab = 'calls';
+
 
 // ── جلب البيانات من Polygon ──
 const POLY = {
@@ -1008,6 +1144,7 @@ const POLY = {
   // سلسلة عقود الأوبشن لسهم معين
   async getOptionsChain(symbol, expiry = null) {
     try {
+      return []; // Free tier - needs Starter plan
       let url = POLY_BASE+'/v3/snapshot/options/'+symbol+'?limit=50';
       if (expiry) url += '&expiration_date='+expiry;
       const d = await pFetch(url);
@@ -1018,6 +1155,7 @@ const POLY = {
   // snapshot لعقد أوبشن واحد مع Greeks
   async getOptionSnapshot(optionTicker) {
     try {
+      return null; // Free tier
       const r = await pFetch(POLY_BASE+'/v3/snapshot/options/'+optionTicker);
       const d = await r.json();
       return d.results?.[0] || null;
@@ -1027,6 +1165,7 @@ const POLY = {
   // أعلى عقود الأوبشن نشاطاً (unusual activity)
   async getTopOptions(symbol) {
     try {
+      return []; // Free tier
       const r = await pFetch(POLY_BASE+'/v3/snapshot/options/'+symbol+'?limit=20&sort=day.volume&order=desc');
       const d = await r.json();
       return d.results || [];
@@ -1035,6 +1174,12 @@ const POLY = {
 
   // تحديث أسعار الأسهم في لوحة الحيتان
   async refreshPrices() {
+    // Flash the live dot
+    const dot = document.querySelector('.live-dot');
+    if(dot){ dot.style.background='#fff'; setTimeout(()=>dot.style.background='',300); }
+    // Update timestamp
+    const ts = document.querySelector('.live-pill');
+    if(ts) ts.title = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
     const symbols = ['NVDA','SPY','AAPL','TSLA','META','QQQ','MSFT','AMZN'];
     for (const sym of symbols) {
       const snap = await POLY.getSnapshot(sym);
@@ -1117,16 +1262,17 @@ const POLY = {
       // اختبار الاتصال
       const test = await POLY.getSnapshot('SPY');
       console.log('Test result:', test);
-      if (test?.price) {
+      if (test && (test.price || test.price === 0)) {
         POLY._showStatus('live');
         showLiveBanner();
         // تحديث كل 15 ثانية
         await POLY.refreshPrices();
-        setInterval(POLY.refreshPrices, 15000);
+        setInterval(POLY.refreshPrices, 3000);
         // تحديث Greeks كل 30 ثانية
         await POLY.refreshGreeks('NVDA');
-        setInterval(() => POLY.refreshGreeks('NVDA'), 30000);
+        setInterval(() => POLY.refreshGreeks(currentSymbol || 'NVDA'), 5000);
         console.log('🚀 Polygon API Connected! SPY:', test.price);
+        setTimeout(()=>refreshOptionsDisplay('NVDA'), 800);
       } else {
         POLY._showStatus('error');
       }
