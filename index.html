@@ -335,19 +335,19 @@ tr:last-child td{border-bottom:none}
 
 <!-- OPTIONS CHAIN LIVE -->
 <div class="card" style="margin:0 0 12px">
-  <div class="ch">
-    <span class="ct">⚡ عقود الأوبشن المباشرة — Yahoo Finance</span>
-    <div style="display:flex;gap:6px;align-items:center">
-      <button id="btn-calls" onclick="tab='calls';refreshOptionsDisplay(currentSymbol)" style="padding:3px 10px;border-radius:4px;border:1px solid var(--green);background:var(--green);color:#000;font-size:11px;cursor:pointer;font-weight:700">CALL</button>
-      <button id="btn-puts" onclick="tab='puts';refreshOptionsDisplay(currentSymbol)" style="padding:3px 10px;border-radius:4px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:11px;cursor:pointer;font-weight:700">PUT</button>
-      <span id="options-timer" style="color:var(--dim);font-size:9px">⏳</span>
+  <div class="ch" style="flex-wrap:wrap;gap:8px">
+    <span class="ct">⚡ عقود الأوبشن المباشرة</span>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button id="btn-calls" onclick="tab='calls';if(allOptionsData)renderOptionsChain(allOptionsData,document.getElementById('options-chain-container'));else refreshOptionsDisplay(currentSymbol)" style="padding:4px 14px;border-radius:6px;border:1px solid var(--green);background:var(--green);color:#000;font-size:12px;cursor:pointer;font-weight:700">📈 CALL</button>
+      <button id="btn-puts" onclick="tab='puts';if(allOptionsData)renderOptionsChain(allOptionsData,document.getElementById('options-chain-container'));else refreshOptionsDisplay(currentSymbol)" style="padding:4px 14px;border-radius:6px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:12px;cursor:pointer;font-weight:700">📉 PUT</button>
+      <button onclick="refreshOptionsDisplay(currentSymbol)" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:11px;cursor:pointer">🔄</button>
+      <span id="options-timer" style="color:var(--dim);font-size:9px"></span>
     </div>
   </div>
-  <div id="options-chain-container" style="overflow-x:auto;min-height:80px">
+  <div id="options-chain-container" style="min-height:80px">
     <div style="color:var(--dim);text-align:center;padding:20px;font-size:12px">⏳ جاري التحميل...</div>
   </div>
 </div>
-
 
 <!-- LIQUIDITY TRACKER VIEW -->
 <div id="v-liquidity" class="view">
@@ -1014,38 +1014,54 @@ async function yFetch(symbol) {
 }
 
 // جلب عقود الأوبشن من Yahoo Finance
+function fmtExpiry(unixSec) {
+  // Yahoo gives Unix timestamp in seconds
+  const d = new Date(unixSec * 1000);
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+}
+
+function fmtExpiryShort(unixSec) {
+  const d = new Date(unixSec * 1000);
+  const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+  const dd = String(d.getUTCDate()).padStart(2,'0');
+  const yy = String(d.getUTCFullYear()).slice(2);
+  return mm+'/'+dd+'/'+yy;
+}
+
 async function getYahooOptions(symbol) {
   try {
     const data = await yFetch(symbol);
-    if (!data?.optionChain?.result?.[0]) return null;
+    if (!data?.optionChain?.result?.[0]) {
+      console.warn('Yahoo: no options data for', symbol, data);
+      return null;
+    }
     const chain = data.optionChain.result[0];
     const options = chain.options?.[0];
     const quote = chain.quote;
+    const price = quote?.regularMarketPrice || quote?.postMarketPrice || quote?.ask || 0;
+    
+    const mapOption = (o, type) => ({
+      strike: o.strike,
+      expiry: fmtExpiry(o.expiration),
+      expiryShort: fmtExpiryShort(o.expiration),
+      expiryTs: o.expiration,
+      bid: o.bid || 0,
+      ask: o.ask || 0,
+      last: o.lastPrice || 0,
+      iv: ((o.impliedVolatility || 0) * 100).toFixed(1),
+      volume: o.volume || 0,
+      oi: o.openInterest || 0,
+      inTheMoney: o.inTheMoney || false,
+      type
+    });
+
     return {
       symbol,
-      price: quote?.regularMarketPrice || quote?.ask,
-      calls: (options?.calls || []).slice(0, 10).map(c => ({
-        strike: c.strike,
-        expiry: new Date(c.expiration * 1000).toLocaleDateString('ar-SA'),
-        bid: c.bid,
-        ask: c.ask,
-        iv: ((c.impliedVolatility || 0) * 100).toFixed(1),
-        volume: c.volume || 0,
-        oi: c.openInterest || 0,
-        delta: c.delta || '--',
-        type: 'CALL'
-      })),
-      puts: (options?.puts || []).slice(0, 10).map(p => ({
-        strike: p.strike,
-        expiry: new Date(p.expiration * 1000).toLocaleDateString('ar-SA'),
-        bid: p.bid,
-        ask: p.ask,
-        iv: ((p.impliedVolatility || 0) * 100).toFixed(1),
-        volume: p.volume || 0,
-        oi: p.openInterest || 0,
-        delta: p.delta || '--',
-        type: 'PUT'
-      }))
+      price,
+      expiryDates: (chain.expirationDates || []).map(ts => ({ts, label: fmtExpiry(ts)})),
+      calls: (options?.calls || []).map(c => mapOption(c, 'CALL')),
+      puts:  (options?.puts  || []).map(p => mapOption(p, 'PUT'))
     };
   } catch(e) { console.error('Yahoo options error:', e); return null; }
 }
@@ -1058,54 +1074,83 @@ async function refreshOptionsDisplay(symbol) {
   currentSymbol = symbol;
   const container = document.getElementById('options-chain-container');
   if (!container) return;
-  container.innerHTML = '<div style="color:var(--dim);text-align:center;padding:20px">⏳ جاري تحميل العقود...</div>';
+  // Only show loading on first load
+  if (!optionsCache[symbol]) {
+    container.innerHTML = '<div style="color:var(--dim);text-align:center;padding:30px;font-size:13px">⏳ جاري تحميل عقود ' + symbol + '...</div>';
+  }
   const data = await getYahooOptions(symbol);
+  const timer = document.getElementById('options-timer');
   if (!data) {
-    container.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px">❌ تعذّر تحميل العقود</div>';
+    container.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px">❌ تعذّر تحميل العقود — تحقق من الاتصال</div>';
+    if(timer) timer.textContent = '🔴 خطأ';
     return;
   }
   optionsCache[symbol] = data;
+  if(timer) timer.textContent = '🟢 ' + new Date().toLocaleTimeString('ar-SA');
   renderOptionsChain(data, container);
 }
 
+let tab = 'calls';
+let allOptionsData = null;
+
 function renderOptionsChain(data, container) {
-  const rows = (tab === 'calls' ? data.calls : data.puts).map(o => `
-    <tr style="border-bottom:1px solid var(--border);font-size:11px">
-      <td style="padding:6px 8px;color:${o.type==='CALL'?'var(--green)':'var(--red)'}">$${o.strike}</td>
-      <td style="padding:6px 8px">${o.expiry}</td>
-      <td style="padding:6px 8px;color:var(--accent)">${o.bid}/${o.ask}</td>
-      <td style="padding:6px 8px;color:var(--gold)">${o.iv}%</td>
-      <td style="padding:6px 8px">${(o.volume||0).toLocaleString()}</td>
-      <td style="padding:6px 8px;color:var(--dim)">${(o.oi||0).toLocaleString()}</td>
-    </tr>
-  `).join('');
+  allOptionsData = data;
+  const list = tab === 'calls' ? data.calls : data.puts;
+  const color = tab === 'calls' ? 'var(--green)' : 'var(--red)';
+
+  // Update call/put button styles
+  const btnCalls = document.getElementById('btn-calls');
+  const btnPuts = document.getElementById('btn-puts');
+  if(btnCalls) { btnCalls.style.background = tab==='calls' ? 'var(--green)' : 'transparent'; btnCalls.style.color = tab==='calls' ? '#000' : 'var(--green)'; }
+  if(btnPuts)  { btnPuts.style.background  = tab==='puts'  ? 'var(--red)'   : 'transparent'; btnPuts.style.color  = tab==='puts'  ? '#fff' : 'var(--red)'; }
+
+  const rows = list.map(o => {
+    // Fix expiry display - Unix timestamp from Yahoo
+    const expiryStr = o.expiry || '--';
+    const ivColor = parseFloat(o.iv) > 60 ? 'var(--red)' : parseFloat(o.iv) > 30 ? 'var(--gold)' : 'var(--green)';
+    const volColor = (o.volume||0) > 1000 ? 'var(--accent)' : 'var(--text)';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px;transition:background .2s" onmouseover="this.style.background='rgba(0,212,255,0.05)'" onmouseout="this.style.background=''">
+      <td style="padding:7px 10px;color:${color};font-weight:700;font-family:'IBM Plex Mono',monospace">$${Number(o.strike).toFixed(0)}</td>
+      <td style="padding:7px 10px;color:var(--dim);font-size:10px;white-space:nowrap">${expiryStr}</td>
+      <td style="padding:7px 10px;color:var(--accent);font-family:'IBM Plex Mono',monospace">${(o.bid||0).toFixed(2)} / ${(o.ask||0).toFixed(2)}</td>
+      <td style="padding:7px 10px;color:${ivColor};font-weight:700">${o.iv}%</td>
+      <td style="padding:7px 10px;color:${volColor};font-weight:${(o.volume||0)>1000?'700':'400'}">${(o.volume||0).toLocaleString()}</td>
+      <td style="padding:7px 10px;color:var(--dim)">${(o.oi||0).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+
+  // Symbol selector buttons
+  const symBtns = ['NVDA','SPY','AAPL','TSLA','META','AMZN','QQQ','MSFT'].map(s =>
+    `<button onclick="refreshOptionsDisplay('${s}')" style="padding:4px 10px;border-radius:4px;border:1px solid ${s===data.symbol?'var(--accent)':'var(--border)'};background:${s===data.symbol?'rgba(0,212,255,0.15)':'transparent'};color:${s===data.symbol?'var(--accent)':'var(--dim)'};font-size:10px;cursor:pointer;transition:.2s">${s}</button>`
+  ).join('');
+
   container.innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-      <span style="color:var(--text);font-weight:700">${data.symbol}</span>
-      <span style="color:var(--green);font-size:13px">$${data.price?.toFixed(2)||'--'}</span>
-      <div style="display:flex;gap:4px;margin-right:auto">
-        ${['NVDA','SPY','AAPL','TSLA','META','AMZN'].map(s=>
-          `<button onclick="refreshOptionsDisplay('${s}')" style="padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:${s===data.symbol?'var(--accent)':'var(--surface)'};color:var(--text);font-size:10px;cursor:pointer">${s}</button>`
-        ).join('')}
-      </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center">
+      <span style="color:var(--text);font-weight:700;font-size:14px">${data.symbol}</span>
+      <span style="color:var(--green);font-size:13px;font-family:'IBM Plex Mono',monospace">$${data.price?.toFixed(2)||'--'}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-right:auto">${symBtns}</div>
     </div>
-    <table style="width:100%;border-collapse:collapse">
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
       <thead>
         <tr style="color:var(--dim);font-size:10px;border-bottom:1px solid var(--border)">
-          <th style="padding:6px 8px;text-align:right">الإضراب</th>
-          <th style="padding:6px 8px;text-align:right">الانتهاء</th>
-          <th style="padding:6px 8px;text-align:right">Bid/Ask</th>
-          <th style="padding:6px 8px;text-align:right">IV%</th>
-          <th style="padding:6px 8px;text-align:right">حجم</th>
-          <th style="padding:6px 8px;text-align:right">OI</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">الإضراب</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">الانتهاء</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">Bid / Ask</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">IV %</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">الحجم</th>
+          <th style="padding:6px 10px;text-align:right;font-weight:600">OI</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <div style="color:var(--dim);font-size:9px;margin-top:8px;text-align:left">📡 Yahoo Finance • يتجدد كل 5 ثوانٍ</div>
+    </div>
+    <div style="color:var(--dim);font-size:9px;margin-top:8px;text-align:left;display:flex;align-items:center;gap:6px">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 1s infinite"></span>
+      📡 Yahoo Finance • تحديث كل 5 ثوانٍ • ${new Date().toLocaleTimeString('ar-SA')}
+    </div>
   `;
 }
-let tab = 'calls';
 
 
 // ── جلب البيانات من Polygon ──
